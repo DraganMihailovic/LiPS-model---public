@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Light-Induced Metastable Superconductivity at an Al-Si Interface</title>
+<style>
+  :root{
+    --bg:#ffffff; --panel:#f3f6fb; --panel2:#fbfcfe; --line:#d7dde8;
+    --txt:#1b2536; --dim:#5c6b84; --amber:#b25e00; --cyan:#0077a8; --mag:#b81d86;
+    --orange:#c05f10; --green:#0e7a44; --red:#b32222;
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{background:var(--bg); color:var(--txt); overflow:hidden;}
+  #app{display:flex; flex-direction:column; height:100vh;}
+  header{
+    display:flex; align-items:baseline; gap:14px; padding:10px 16px 8px;
+    border-bottom:1px solid var(--line); background:linear-gradient(180deg,#ffffff,#f5f8fc);
+    flex:0 0 auto;
+  }
+  header h1{font-size:19px; font-weight:700; letter-spacing:.02em;}
+  header .sub{font-size:14px; color:var(--dim);}
+  header a{color:var(--amber); font-size:13px; text-decoration:none; margin-left:auto; white-space:nowrap;}
+  header a:hover{text-decoration:underline;}
+  #main{display:flex; flex:1 1 auto; min-height:0;}
+  #viewport{position:relative; flex:1 1 auto; min-width:0; background:radial-gradient(120% 90% at 60% 20%, #ffffff 0%, #eef2f7 70%);}
+  #gl{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab;}
+  #gl.dragging{cursor:grabbing;}
+  #overlay{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  .lbl{position:absolute; font-size:13.5px; font-weight:600; color:#1e2c44; white-space:nowrap; transform:translate(-50%,-120%);
+       text-shadow:0 1px 2px rgba(255,255,255,.9);}
+  .lbl.mk{font-size:13px; font-weight:700; padding:2px 7px; border-radius:8px; background:rgba(255,255,255,.88);
+          border:1px solid rgba(0,0,0,.22);}
+  #legend{position:absolute; left:12px; bottom:10px; font-size:13px; color:var(--dim);
+          background:rgba(255,255,255,.85); border:1px solid var(--line); border-radius:8px; padding:7px 10px; line-height:1.55;}
+  .sw{display:inline-block; width:11px; height:11px; border-radius:5px; margin-right:5px; vertical-align:-1px;}
+  #hint{position:absolute; right:12px; bottom:10px; font-size:12px; color:#8290a8;}
+  #side{
+    flex:0 0 362px; background:var(--panel2); border-left:1px solid var(--line);
+    overflow-y:auto; padding:12px 13px 20px; scrollbar-width:thin;
+  }
+  #side::-webkit-scrollbar{width:8px;} #side::-webkit-scrollbar-thumb{background:#c7d1e0; border-radius:4px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 11px; margin-bottom:10px;}
+  .card h3{font-size:12.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin-bottom:8px; font-weight:650;}
+  #stateBadge{display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.06em; padding:2px 8px; border-radius:9px; margin-bottom:6px;}
+  .b-normal{background:#e8edf5; color:#3d5372;}
+  .b-light{background:#fdeeca; color:#8a5200;}
+  .b-meta{background:#f7d3ee; color:#a01578;}
+  .b-sc{background:#d3f2e2; color:#0a6e3c;}
+  .b-erase{background:#f9dcdc; color:#a02222;}
+  #stateText{font-size:15px; line-height:1.45; min-height:34px;}
+  #timeRow{font-size:12.5px; color:var(--dim); margin-top:4px;}
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  button{
+    background:#ffffff; color:var(--txt); border:1px solid #b9c4d6; border-radius:8px;
+    padding:8px 6px; font-size:14px; cursor:pointer; font-family:inherit; transition:background .15s;
+  }
+  button:hover{background:#f0f4fa;}
+  button:active{transform:translateY(1px);}
+  button.primary{background:#fdf1da; border-color:#dcae5f; color:#8a5200;}
+  button.primary:hover{background:#fae9c9;}
+  button.danger{background:#fdecec; border-color:#e2a5a5; color:#a02222;}
+  button.danger:hover{background:#fadcdc;}
+  .presets{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{background:#ffffff; border:1px solid #c2cddf; border-radius:14px; padding:5px 11px; font-size:12.5px; color:#3a4a66; cursor:pointer;}
+  .chip:hover{background:#f1f5fb;}
+  .chip.on{background:#efe6fb; border-color:#9a6fd0; color:#5b2e9e; font-weight:700;}
+  .srow{display:flex; align-items:center; gap:8px; margin:7px 0 3px;}
+  .srow label{flex:0 0 132px; font-size:13px; font-weight:600; color:var(--dim);}
+  .srow output{flex:0 0 52px; font-size:13.5px; font-weight:600; color:var(--txt); text-align:right; font-variant-numeric:tabular-nums;}
+  input[type=range]{flex:1 1 auto; accent-color:#5fa8ff; height:18px;}
+  #readouts{display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; font-size:13px;}
+  #readouts .k{color:var(--dim);} #readouts .v{color:var(--txt); font-variant-numeric:tabular-nums; text-align:right;}
+  #readouts .full{grid-column:1 / -1;}
+  #winRow{margin-top:7px; font-size:12.5px; color:var(--dim); border-top:1px dashed var(--line); padding-top:6px;}
+  canvas.inset{width:100%; border-radius:6px; background:#ffffff; border:1px solid var(--line); display:block;}
+  #modelPanel details{font-size:13.5px; line-height:1.6; color:var(--dim);}
+  #modelPanel summary{cursor:pointer; color:var(--txt); font-size:13.5px; font-weight:700;}
+  #modelPanel b{color:var(--txt); font-weight:600;}
+  .eq{background:#f3f6fb; border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin:8px 0;
+      font-family:"Cambria Math",Georgia,serif; font-size:15.5px; text-align:center; color:#1b2536; line-height:1.9;}
+  .eq sub,.eq sup{font-size:11px;}
+  .termA{color:#0077a8;} .termB{color:#7040c8;} .termL{color:#0e7a44;} .termQ{color:#703aa0;}
+  .termK{color:#a05e00;} .termG{color:var(--mag);} .termH{color:var(--orange);}
+  #modelPanel p{margin:6px 0;}
+  #modelPanel .ref{margin-top:8px; font-size:12px;}
+  #modelPanel a{color:var(--amber);}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Light-Induced Metastable Superconductivity at an Al-Si Interface</h1>
+    <span class="sub">GL landscape F(ψ, n<sub>tr</sub>) &mdash; ψ coupled to trapped charge n<sub>tr</sub> and to the topological kink sector Q of the misfit superlattice</span>
+    <a href="https://arxiv.org/abs/2607.14567" target="_blank" rel="noopener">Yursa et al., arXiv:2607.14567</a>
+  </header>
+  <div id="main">
+    <div id="viewport">
+      <canvas id="gl"></canvas>
+      <div id="overlay">
+        <div class="lbl" id="lbPsi">&psi; (order parameter)</div>
+        <div class="lbl" id="lbN">n<sub>tr</sub> (trapped charge)</div>
+        <div class="lbl" id="lbF">F (free energy)</div>
+        <div class="lbl mk" id="lbMkN" style="color:var(--cyan)">N</div>
+        <div class="lbl mk" id="lbMkSC" style="color:var(--mag)">SC*</div>
+        <div class="lbl mk" id="lbMkBr" style="color:var(--orange)">barrier</div>
+        <div id="legend">
+          <span class="sw" style="background:var(--cyan)"></span>normal minimum&nbsp;&nbsp;
+          <span class="sw" style="background:var(--mag)"></span>SC minimum&nbsp;&nbsp;
+          <span class="sw" style="background:var(--orange)"></span>saddle barrier<br/>
+          <span class="sw" style="background:var(--amber)"></span>state trajectory&nbsp;&nbsp;
+          height axis soft-compressed: z &prop; u/(1+|u|), u = F/0.55
+        </div>
+        <div id="hint">drag to rotate &middot; wheel to zoom</div>
+      </div>
+    </div>
+    <aside id="side">
+      <div class="card" id="statusCard">
+        <h3>System state</h3>
+        <span id="stateBadge" class="b-normal">NORMAL</span>
+        <div id="stateText">Initializing...</div>
+        <div id="timeRow">t = 0.0 &nbsp;|&nbsp; T = 3.63 T<sub>c</sub> &asymp; 4.4 K &nbsp;|&nbsp; Q = 0</div>
+      </div>
+      <div class="card">
+        <h3>Light programming</h3>
+        <div class="btns">
+          <button id="btnWrite" class="primary">&#9654; Write pulse</button>
+          <button id="btnErase" class="danger">&#10006; Erase pulse</button>
+          <button id="btnKick">&#127386; Thermal kick</button>
+          <button id="btnReset">&#8635; Reset</button>
+          <button id="btnPlay" style="grid-column:1 / -1">&#9208; Pause / speed: <span id="spdLbl">1&times;</span></button>
+        </div>
+        <div class="presets" style="margin-top:9px">
+          <span class="chip" data-preset="metastable">1&ensp;write &rarr; metastable (Q=1)</span>
+          <span class="chip" data-preset="notrap">2&ensp;no traps, no kinks &rarr; collapse</span>
+          <span class="chip" data-preset="topo">3&ensp;charge leaks, kinks hold</span>
+          <span class="chip" data-preset="weakg">4&ensp;weak feedback &rarr; collapse</span>
+          <span class="chip" data-preset="strong">5&ensp;double pulse (Q=2) &rarr; SC global</span>
+          <span class="chip" data-preset="gpin">6&ensp;strong GB pinning</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Parameters</h3>
+        <div class="srow"><label>T / T<sub>c</sub> (Al)</label><input type="range" id="sT" min="2.5" max="5.5" step="0.01" value="3.63"><output id="oT">3.63</output></div>
+        <div class="srow"><label>Light fluence</label><input type="range" id="sF" min="0" max="1.2" step="0.01" value="1.00"><output id="oF">1.00</output></div>
+        <div class="srow"><label>charge-SC coupling g</label><input type="range" id="sG" min="0" max="3" step="0.01" value="2.20"><output id="oG">2.20</output></div>
+        <div class="srow"><label>trap stiffness &kappa;</label><input type="range" id="sK" min="0.5" max="3" step="0.01" value="1.50"><output id="oK">1.50</output></div>
+        <div class="srow"><label>trapped fraction p</label><input type="range" id="sP" min="0" max="0.8" step="0.01" value="0.25"><output id="oP">0.25</output></div>
+      </div>
+      <div class="card">
+        <h3>Landscape diagnostics</h3>
+        <div id="readouts">
+          <span class="k">&alpha;<sub>eff</sub> = &alpha; - g&middot;n<sub>p</sub> - g<sub>k</sub>Q</span><span class="v" id="rC2">-</span>
+          <span class="k">&beta;<sub>eff</sub> = &beta; - g&sup2;/&kappa;</span><span class="v" id="rC4">-</span>
+          <span class="k">barrier &Delta;F (N&rarr;saddle)</span><span class="v" id="rBar">-</span>
+          <span class="k">F(SC*) - F(N)</span><span class="v" id="rMarg">-</span>
+          <span class="k">&psi;* , n<sub>tr</sub>*</span><span class="v" id="rPsi">-</span>
+          <span class="k">well depth (SC&rarr;barrier)</span><span class="v" id="rDepth">-</span>
+        </div>
+        <div id="winRow">Metastable window in T: <span id="rWin">-</span></div>
+      </div>
+      <div class="card" id="kinkCard">
+        <h3>Topological kink sector (fracton / FK)</h3>
+        <canvas id="fkchain" class="inset" height="84"></canvas>
+        <div id="readouts" style="margin-top:8px">
+          <span class="k">winding number Q</span><span class="v" id="rQ">0</span>
+          <span class="k">sector cost E<sub>k</sub>&middot;Q</span><span class="v" id="rEk">0.00</span>
+          <span class="k">escape barrier E<sub>esc</sub> = E<sub>top</sub>+n<sub>x</sub>E<sub>pin</sub></span><span class="v" id="rEsc">-</span>
+          <span class="k">annihilation &tau;<sub>top</sub> = e<sup>E<sub>esc</sub></sup>/&gamma;&#8320;</span><span class="v" id="rTau">-</span>
+        </div>
+        <div class="srow"><label>kink-SC coupling g<sub>k</sub></label><input type="range" id="sGk" min="0" max="1.2" step="0.01" value="0.85"><output id="oGk">0.85</output></div>
+        <div class="srow"><label>kink barrier E<sub>top</sub></label><input type="range" id="sEtop" min="0" max="6" step="0.05" value="3.00"><output id="oEtop">3.00</output></div>
+        <div class="srow"><label>GB pinning n<sub>x</sub>&middot;E<sub>pin</sub></label><input type="range" id="sPin" min="0" max="8" step="0.05" value="1.05"><output id="oPin">1.05</output></div>
+        <div class="presets" style="margin-top:8px">
+          <span class="chip on" id="chipTopo">kink dynamics: ON</span>
+          <span class="chip on" id="chipPin">GB pinning: ON</span>
+        </div>
+        <div style="font-size:12px; color:var(--dim); margin-top:7px; line-height:1.5">
+          Each write pulse injects a kink pair into the misfit-dislocation (MD) superlattice lines.
+          Kinks are fractonic charges &mdash; immobile topological defects of the MD-chain subsystem symmetry &mdash;
+          so Q &isin; &#8484; labels disconnected sectors of F<sub>eff</sub>. Relaxation to the normal state
+          requires a rare kink-pair annihilation past the grain-boundary and dislocation-crossing junctions
+          that pin the lines: &tau; &prop; e<sup>E<sub>top</sub>+n<sub>x</sub>E<sub>pin</sub></sup>.
+        </div>
+      </div>
+      <div class="card">
+        <h3>Effective potential along the minimal path</h3>
+        <canvas id="inset" class="inset" height="190"></canvas>
+        <canvas id="timeline" class="inset" style="margin-top:8px" height="76"></canvas>
+      </div>
+      <div class="card" id="modelPanel">
+        <details>
+          <summary>About the model</summary>
+          <div class="eq">
+            F(&psi;, n) = <span class="termA">&alpha;(T)&thinsp;&psi;&sup2;</span> + <span class="termB">&frac12;&beta;&thinsp;&psi;&#8308;</span>
+            + <span class="termL">(λ/6)&thinsp;&psi;&#8310;</span> + <span class="termK">&frac12;&kappa;(n - n<sub>p</sub>)&sup2;</span>
+            - <span class="termG">g&thinsp;n&thinsp;&psi;&sup2;</span> - <span class="termH">h(t)&thinsp;n</span>
+            + <span class="termQ">E<sub>k</sub>Q - g<sub>k</sub>Q&thinsp;&psi;&sup2;</span>
+          </div>
+          <p><b>ψ</b>: superconducting order parameter of the Al-Si interface condensate.
+             <b>n</b>: charge density trapped in interface (misfit-dislocation) states of the Si gap.</p>
+          <p><span class="termA">&#9637;</span> <b>&alpha;(T) = &alpha;&#8320;(T/T<sub>c</sub> - 1)</b>, T<sub>c</sub> &asymp; 1.2 K for bulk Al; the metastable state lives above 2 K in the experiment.</p>
+          <p><span class="termG">&#9637;</span> <b>-g&thinsp;n&thinsp;&psi;&sup2;</b>: trapped charge screens the interface Coulomb repulsion and renormalizes the quadratic term, &alpha;<sub>eff</sub> = &alpha; - g&thinsp;n &lt; 0 &rarr; pairing favoured. This is the <b>trapped-charge stabilization</b>.</p>
+          <p><span class="termK">&#9637;</span> <b>&frac12;&kappa;(n - n<sub>p</sub>)&sup2;</b>: trap capacitance. Since n follows &psi;&sup2; (n* = n<sub>p</sub> + g&psi;&sup2;/&kappa;), eliminating n renormalizes the quartic:
+             <b>&beta;<sub>eff</sub> = &beta; - g&sup2;/&kappa; &lt; 0</b>, turning the single well into a bistable landscape. A larger condensate holds more screening charge, which in turn sustains the condensate: <b>self-stabilization by the condensate itself</b>.</p>
+          <p><span class="termH">&#9637;</span> <b>-h(t)&thinsp;n</b>: transient light drive during the femtosecond pulse (photoinjection into the traps). n<sub>p</sub> carries a persistent fraction p (deep traps) and a slow leak &tau;<sub>n</sub>.</p>
+          <p><span class="termQ">&#9637;</span> <b>Topological kink sector (fracton / Frenkel&ndash;Kontorova):</b>
+             The Al&ndash;Si interface carries a misfit-dislocation (MD) superlattice. Each MD line is a 1-D chain on the periodic
+             substrate potential of the interface &mdash; a Frenkel&ndash;Kontorova chain &mdash; with its own subsystem U(1) phase symmetry.
+             Each W pulse injects kink pairs: a kink advances the winding number of its line by one, and the total kink number Q is a
+             conserved <b>topological charge</b>. In fracton&ndash;elasticity duality such charges are fractonic: kinks are lineons that can only
+             glide along their own MD line and cannot disappear without meeting an anti-kink
+             (<a href="https://arxiv.org/abs/1711.11044" target="_blank" rel="noopener">Pretko &amp; Radzihovsky, PRL 120, 195301 (2018)</a>;
+             fractonic superfluids: <a href="https://arxiv.org/abs/2010.03261" target="_blank" rel="noopener">arXiv:2010.03261</a>).
+             Because Q &isin; &#8484; cannot change continuously, the system cannot relax smoothly to &psi; = 0: escape from the SC basin
+             requires a rare, thermally activated kink-pair annihilation with rate &gamma; = &gamma;&#8320;e<sup>&minus;E<sub>top</sub></sup> &mdash; topological protection.
+             Each kink also pins pairing through its strain field: <b>&minus;g<sub>k</sub>Q&thinsp;&psi;&sup2;</b>, at a sector cost <b>E<sub>k</sub>Q</b>.
+             This is a third stabilization channel, on top of trapped charge and condensate self-feedback, and it is what makes
+             metastability a <b>programmable memory</b>
+             (<a href="https://arxiv.org/abs/2607.14567" target="_blank" rel="noopener">Yursa et al., arXiv:2607.14567</a>).</p>
+          <p><span class="termQ">&#9637;</span> <b>Grain-boundary pinning and dislocation crossings:</b>
+             The Al film is polycrystalline: each MD line terminates at grain boundaries and is crossed by forest dislocations.
+             These junctions are pinning sites for kinks (classic Cottrell-type locking and forest hardening of dislocations).
+             A kink glides freely along its line but must thermally depin at each junction, so annihilating a kink&ndash;antikink
+             pair across n<sub>x</sub> junctions requires an escape barrier
+             <b>E<sub>esc</sub> = E<sub>top</sub> + n<sub>x</sub>E<sub>pin</sub></b>, exponentially extending the non-volatile lifetime.
+             Pinning also slows the winding during a write pulse (&tau;<sub>Q</sub> &rarr; &tau;<sub>Q</sub>(1 + 0.5&thinsp;n<sub>x</sub>E<sub>pin</sub>))
+             and the forced annihilation during an erase pulse. At extreme pinning the kink pair cannot separate within the pulse,
+             the winding stays incomplete and the write fails &mdash; a write-fidelity trade-off: pinning protects memory, but too
+             much of it prevents writing.</p>
+          <p class="ref">Note: the implementation here is a phenomenological integer-sector caricature &mdash; Q is treated as a single
+             global winding number with discrete rare-event dynamics, not a full fracton tensor-gauge calculation.</p>
+          <p><span class="termL">&#9637;</span> <b>(λ/6)&psi;&#8310;</b>: saturation term bounding the landscape (strong-coupling / interface corrections).</p>
+          <p>The pulse also seeds ψ (templating by the moir&eacute;-like misfit-dislocation superlattice). A write pulse drives the system over the saddle into the SC basin; once there, trapped charge + condensate feedback keep a finite barrier &Delta;F against the normal state. The state can be erased (pair-breaking + de-trapping pulse) and rewritten, i.e. <b>programmable superconductivity</b>.</p>
+          <p class="ref">Phenomenological visualization modelled on:
+             V.&thinsp;Yursa <i>et al.</i>, &ldquo;A programmable superconductor created by light&rdquo;,
+             <a href="https://arxiv.org/abs/2607.14567" target="_blank" rel="noopener">arXiv:2607.14567</a> (2026).
+             Units are normalized GL units; parameters are illustrative.</p>
+        </details>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   1. Ginzburg-Landau model  (validated numerically)
+   f(psi,n) = a psi^2 + (beta/2) psi^4 + (lambda/6) psi^6
+            + (k/2)(n - np)^2 - g n psi^2 - h n
+            - gk*Q psi^2 + Ek*Q      (Q: MD kink winding sector)
+   ============================================================ */
+const MOD = {
+  alpha0:1.0, beta:0.3, lambda:2.4,
+  g:2.2, k:1.5,
+  np0:0.7, h0:0.9, tauN:4.0,
+  T:3.63, F:1.0, p:0.25,
+  tauPsi:0.12, tauNdyn:0.2, s0:0.35, sigma:0.03,
+  wDur:1.8, wEdge:0.4, eDur:0.9, eEdge:0.3, eKick:1.6, eKill:0.96,
+  gk:0.85, Ek:0.06, Etop:3.0, tauQ:0.5, gamma0:0.05, topoOn:true,
+  Ppin:1.05, pinOn:true,   /* GB/crossing pinning: n_x*E_pin, toggle */
+};
+const PSI_MAX=1.9, N_MAX=5.6;
+const smooth = x => x<=0?0:(x>=1?1:x*x*(3-2*x));
+
+const proto = { writes:[], erases:[] };
+const KINKS = [];  /* kink positions on the FK chain (visual) */
+const GBX = [0.18, 0.42, 0.66, 0.90];  /* grain-boundary / crossing junctions (visual) */
+function envW(w,t){const te=w.t0+MOD.wDur; return smooth((t-w.t0)/MOD.wEdge)*smooth((te-t)/MOD.wEdge);}
+function riseW(w,t){return smooth((t-w.t0)/MOD.wEdge);}
+function leakW(w,t){const te=w.t0+MOD.wDur; return t<=te?1:Math.exp(-(t-te)/MOD.tauN);}
+function envE(e,t){const te=e.t0+MOD.eDur; return smooth((t-e.t0)/MOD.eEdge)*smooth((te-t)/MOD.eEdge);}
+function doneE(e,t){return smooth((t-(e.t0+MOD.eDur))/0.4);}
+function driveOf(t){let h=0; for(const w of proto.writes) h+=MOD.h0*MOD.F*envW(w,t); return h;}
+function npOf(t){
+  let np=0;
+  for(const w of proto.writes){
+    let c=MOD.np0*MOD.F*riseW(w,t)*(MOD.p+(1-MOD.p)*leakW(w,t));
+    for(const e of proto.erases) if(w.t0<e.t0) c*=(1-MOD.eKill*doneE(e,t));
+    np+=c;
+  }
+  for(const e of proto.erases) np*=(1-0.9*envE(e,t));
+  return np;
+}
+function aOf(t){let a=MOD.alpha0*(MOD.T-1); for(const e of proto.erases) a+=MOD.eKick*envE(e,t);
+  return a - (MOD.topoOn ? MOD.gk*SIM.q : 0);}
+function ctxOf(t){ return {a:aOf(t), np:npOf(t), h:driveOf(t), q:(MOD.topoOn?SIM.q:0)}; }
+function fEval(psi,n,c){
+  const p2=psi*psi;
+  return c.a*p2 + 0.5*MOD.beta*p2*p2 + (MOD.lambda/6)*p2*p2*p2
+       + 0.5*MOD.k*(n-c.np)*(n-c.np) - MOD.g*n*p2 - c.h*n + MOD.Ek*c.q;
+}
+function feffOf(psi,c){ return fEval(psi, c.np+(MOD.g*psi*psi+c.h)/MOD.k, c); }
+/* critical points of f_eff (n slaved): c2 + 2c4 x + 3c6 x^2 = 0, x = psi^2 */
+function critPts(c){
+  const c2 = c.a - MOD.g*c.np - MOD.g*c.h/MOD.k;
+  const c4 = 0.5*(MOD.beta - MOD.g*MOD.g/MOD.k);
+  const c6 = MOD.lambda/6;
+  const disc = (2*c4)*(2*c4) - 12*c6*c2;
+  const res = {c2,c4,c6, N:{psi:0, n:c.np+c.h/MOD.k, f:feffOf(0,c)}};
+  if(disc>0 && c4<0){
+    const sq=Math.sqrt(disc);
+    const x1=(-2*c4-sq)/(6*c6), x2=(-2*c4+sq)/(6*c6);
+    if(x1>1e-4 && x2>1e-4){
+      const mk=x=>({psi:Math.sqrt(x), n:c.np+MOD.g*x/MOD.k, f:feffOf(Math.sqrt(x),c)});
+      res.barrier=mk(x1); res.SC=mk(x2);
+    }
+  }
+  return res;
+}
+/* dynamics */
+const SIM = { t:0, psi:0.02, n:0, q:0, qAcc:0, running:true, speed:1, dt:0.004 };
+function stepSim(dt,t){
+  const c=ctxOf(t);
+  const p2=SIM.psi*SIM.psi;
+  const dfp = 2*c.a*SIM.psi + 2*MOD.beta*SIM.psi*p2 + MOD.lambda*SIM.psi*p2*p2 - 2*MOD.g*SIM.n*SIM.psi;
+  const dfn = MOD.k*(SIM.n-c.np) - MOD.g*p2 - c.h;
+  let src=0; for(const w of proto.writes) src += MOD.s0*envW(w,t);
+  SIM.psi += (-dfp/MOD.tauPsi + src)*dt + MOD.sigma*Math.sqrt(dt)*(Math.random()*2-1);
+  SIM.psi = Math.min(2.05, Math.abs(SIM.psi));   /* psi is an amplitude: fold the mirror well */
+  SIM.n   += (-dfn/MOD.tauNdyn)*dt;
+  /* --- topological kink sector: integer winding number of the MD superlattice --- */
+  const P = (MOD.topoOn && MOD.pinOn) ? MOD.Ppin : 0;   /* GB/crossing pinning strength */
+  if(MOD.topoOn){
+    for(const w of proto.writes) if(w.q0==null && t>=w.t0) w.q0=Math.round(SIM.q);
+    /* pinning-limited kink formation: junctions slow kink-pair separation during the write */
+    for(const w of proto.writes) if(w.q0!=null) SIM.q += (w.q0+1-SIM.q)*envW(w,t)*dt/(MOD.tauQ*(1+0.5*P));
+    /* pinning-limited forced annihilation during the erase */
+    for(const e of proto.erases) SIM.q += (0-SIM.q)*envE(e,t)*dt/(0.3*(1+0.35*P));
+    /* kink formation completes discretely: snap to the integer sector */
+    for(const w of proto.writes) if(!w.snapped && t>w.t0+MOD.wDur+MOD.wEdge){ if(w.q0!=null && SIM.q>w.q0+0.5) SIM.q=w.q0+1; w.snapped=true; }
+    for(const e of proto.erases) if(!e.snapped && t>e.t0+MOD.eDur+MOD.eEdge){ if(SIM.q<0.75) SIM.q=0; e.snapped=true; }
+    /* rare kink-pair annihilation: escape must depin at n_x junctions, rate gamma0*exp(-(Etop+P)) */
+    if(SIM.q>0){ SIM.qAcc += dt*MOD.gamma0*Math.exp(-(MOD.Etop+P));
+      if(SIM.qAcc>=1){ SIM.q=Math.max(0,SIM.q-1); SIM.qAcc=0; } }
+  } else { SIM.q=0; SIM.qAcc=0; }
+}
+function resetSim(clearProto=true){
+  SIM.t=0; SIM.psi=0.02; SIM.n=0; SIM.q=0; SIM.qAcc=0; trail.length=0; KINKS.length=0;
+  if(clearProto){ proto.writes.length=0; proto.erases.length=0; }
+}
+
+/* ============================================================
+   2. Display transforms + colormap
+   ============================================================ */
+const ZREF=0.55, ZMAX=1.7, SPAN=3.3, FLOOR_Z=-2.02;
+function zmap(f){ const u=f/ZREF; return ZMAX*u/(1+Math.abs(u)); }
+function wx(psi){ return (psi/PSI_MAX-0.5)*SPAN; }
+function wy(n){ return (n/N_MAX-0.5)*SPAN; }
+
+const HEAT=[[0.00,0x08,0x04,0x0f],[0.18,0x20,0x09,0x4d],[0.36,0x55,0x13,0x7f],
+            [0.52,0x8a,0x2a,0x7a],[0.68,0xbf,0x4a,0x63],[0.82,0xea,0x8a,0x54],
+            [0.93,0xf7,0xc9,0x5c],[1.00,0xfd,0xf0,0xb2]];
+function heatRGB(t,out,off){
+  if(t<0)t=0; if(t>1)t=1;
+  let i=0; while(i<HEAT.length-2 && t>HEAT[i+1][0]) i++;
+  const A=HEAT[i], B=HEAT[i+1];
+  const u=(t-A[0])/(B[0]-A[0]);
+  out[off]=A[1]+(B[1]-A[1])*u; out[off+1]=A[2]+(B[2]-A[2])*u; out[off+2]=A[3]+(B[3]-A[3])*u;
+}
+
+/* ============================================================
+   3. WebGL setup
+   ============================================================ */
+const cvs = document.getElementById('gl');
+const gl = cvs.getContext('webgl',{antialias:true}) || cvs.getContext('experimental-webgl',{antialias:true});
+function mkProg(vs,fs){
+  function sh(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  const p=gl.createProgram();
+  gl.attachShader(p,sh(gl.VERTEX_SHADER,vs)); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+/* --- surface program --- */
+const surfProg = mkProg(
+`attribute vec3 aPos; attribute vec3 aCol; uniform mat4 uMVP; varying vec3 vCol;
+void main(){ gl_Position=uMVP*vec4(aPos,1.0); vCol=aCol; }`,
+`precision mediump float; varying vec3 vCol;
+void main(){ gl_FragColor=vec4(vCol,1.0); }`);
+/* --- line program --- */
+const lineProg = mkProg(
+`attribute vec3 aPos; attribute vec4 aCol; uniform mat4 uMVP; varying vec4 vCol;
+void main(){ gl_Position=uMVP*vec4(aPos,1.0); vCol=aCol; }`,
+`precision mediump float; varying vec4 vCol;
+void main(){ gl_FragColor=vCol; }`);
+/* --- point program --- */
+const ptProg = mkProg(
+`attribute vec3 aPos; attribute vec4 aCol; attribute float aSize;
+uniform mat4 uMVP; varying vec4 vCol;
+void main(){ gl_Position=uMVP*vec4(aPos,1.0);
+gl_PointSize = clamp(aSize,1.0,128.0); vCol=aCol; }`,
+`precision mediump float; varying vec4 vCol;
+void main(){ vec2 q=gl_PointCoord*2.0-1.0; float d=dot(q,q);
+float a=smoothstep(1.0,0.45,d);
+gl_FragColor=vec4(vCol.rgb, vCol.a*a); if(gl_FragColor.a<0.01) discard; }`);
+/* --- floor program (procedural heatmap + contours) --- */
+const floorProg = mkProg(
+`attribute vec2 aG; uniform mat4 uMVP; uniform float uZ; varying vec2 vG;
+void main(){ vG=aG; vec3 p=vec3((aG.x-0.5)*${SPAN.toFixed(3)}, (aG.y-0.5)*${SPAN.toFixed(3)}, uZ);
+gl_Position=uMVP*vec4(p,1.0); }`,
+`precision mediump float; varying vec2 vG;
+uniform float uA,uB,uL,uG,uK,uNp,uH,uGlow,uEr;
+vec3 heat(float t){
+  vec3 c0=vec3(0.031,0.016,0.059), c1=vec3(0.125,0.035,0.302), c2=vec3(0.333,0.075,0.498),
+       c3=vec3(0.541,0.165,0.478), c4=vec3(0.749,0.290,0.388), c5=vec3(0.918,0.541,0.329),
+       c6=vec3(0.969,0.788,0.361), c7=vec3(0.992,0.941,0.698);
+  t=clamp(t,0.0,1.0);
+  vec3 c=mix(c0,c1,smoothstep(0.00,0.18,t));
+  c=mix(c,c2,smoothstep(0.18,0.36,t)); c=mix(c,c3,smoothstep(0.36,0.52,t));
+  c=mix(c,c4,smoothstep(0.52,0.68,t)); c=mix(c,c5,smoothstep(0.68,0.82,t));
+  c=mix(c,c6,smoothstep(0.82,0.93,t)); c=mix(c,c7,smoothstep(0.93,1.00,t));
+  return c;
+}
+void main(){
+  float psi=vG.x*${PSI_MAX.toFixed(3)}; float n=vG.y*${N_MAX.toFixed(3)};
+  float p2=psi*psi;
+  float f=uA*p2 + 0.5*uB*p2*p2 + (uL/6.0)*p2*p2*p2 + 0.5*uK*(n-uNp)*(n-uNp) - uG*n*p2 - uH*n;
+  float t=(f+2.2)/4.4;
+  vec3 col=mix(vec3(1.0), heat(t), 0.20);
+  /* energy contours */
+  float fr=abs(fract(f/0.18)-0.5);
+  float line=smoothstep(0.435,0.5,fr);
+  col=mix(col, vec3(0.16,0.20,0.30), line*0.55);
+  /* coordinate grid */
+  float gp=abs(fract(psi/0.25)-0.5); float gn=abs(fract(n/0.5)-0.5);
+  float grid=smoothstep(0.462,0.5,max(gp,gn));
+  col=mix(col, vec3(0.55,0.60,0.70), grid*0.42);
+  /* light glow */
+  col=mix(col, vec3(1.0,0.82,0.50), uGlow*0.35); col=mix(col, vec3(1.0,0.55,0.50), uEr*0.35);
+  gl_FragColor=vec4(col,1.0);
+}`);
+
+const U = {
+  surf:{mvp:gl.getUniformLocation(surfProg,'uMVP')},
+  line:{mvp:gl.getUniformLocation(lineProg,'uMVP')},
+  pt:{mvp:gl.getUniformLocation(ptProg,'uMVP'), px:gl.getUniformLocation(ptProg,'uPx')},
+  floor:{mvp:gl.getUniformLocation(floorProg,'uMVP'), z:gl.getUniformLocation(floorProg,'uZ'),
+         a:gl.getUniformLocation(floorProg,'uA'), b:gl.getUniformLocation(floorProg,'uB'),
+         l:gl.getUniformLocation(floorProg,'uL'), g:gl.getUniformLocation(floorProg,'uG'),
+         k:gl.getUniformLocation(floorProg,'uK'), np:gl.getUniformLocation(floorProg,'uNp'),
+         h:gl.getUniformLocation(floorProg,'uH'), glow:gl.getUniformLocation(floorProg,'uGlow'),
+         er:gl.getUniformLocation(floorProg,'uEr')},
+};
+
+/* ---- matrices ---- */
+function mIdent(){return [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];}
+function mMul(a,b){
+  const o=new Array(16);
+  for(let i=0;i<4;i++)for(let j=0;j<4;j++){
+    let s=0; for(let k2=0;k2<4;k2++) s+=a[k2*4+j]*b[i*4+k2];
+    o[i*4+j]=s;
+  } return o;
+}
+function mPersp(fovy,aspect,near,far){
+  const f=1/Math.tan(fovy/2), nf=1/(near-far);
+  return [f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0];
+}
+function mLook(eye,ctr,up){
+  let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];
+  let zl=Math.hypot(zx,zy,zz); zx/=zl; zy/=zl; zz/=zl;
+  let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+  const xl=Math.hypot(xx,xy,xz); xx/=xl; xy/=xl; xz/=xl;
+  const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+  return [xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0,
+          -(xx*eye[0]+xy*eye[1]+xz*eye[2]),
+          -(yx*eye[0]+yy*eye[1]+yz*eye[2]),
+          -(zx*eye[0]+zy*eye[1]+zz*eye[2]),1];
+}
+function mPt(m,v){
+  return [m[0]*v[0]+m[4]*v[1]+m[8]*v[2]+m[12]*v[3],
+          m[1]*v[0]+m[5]*v[1]+m[9]*v[2]+m[13]*v[3],
+          m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
+          m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3]];
+}
+
+/* ---- geometry buffers ---- */
+const NPsi=150, NN=110, NVERT=NPsi*NN;
+const surfPos=new Float32Array(NVERT*3), surfCol=new Float32Array(NVERT*3);
+const idxArr=[];
+for(let j=0;j<NN-1;j++)for(let i=0;i<NPsi-1;i++){
+  const a=j*NPsi+i, b=a+1, c=a+NPsi, d=c+1;
+  idxArr.push(a,c,b, b,c,d);
+}
+const surfIdx=new Uint16Array(idxArr);
+const surfVBO=gl.createBuffer(), surfCBO=gl.createBuffer(), surfIBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,surfVBO); gl.bufferData(gl.ARRAY_BUFFER,surfPos,gl.DYNAMIC_DRAW);
+gl.bindBuffer(gl.ARRAY_BUFFER,surfCBO); gl.bufferData(gl.ARRAY_BUFFER,surfCol,gl.DYNAMIC_DRAW);
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,surfIBO); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,surfIdx,gl.STATIC_DRAW);
+
+/* wireframe vertex list (every 10th grid line, as line pairs) */
+const wireRefs=[];
+for(let j=0;j<NN;j+=10) for(let i=0;i<NPsi-1;i++){ wireRefs.push([i,j],[i+1,j]); }
+for(let i=0;i<NPsi;i+=10) for(let j=0;j<NN-1;j++){ wireRefs.push([i,j],[i,j+1]); }
+const wirePos=new Float32Array(wireRefs.length*3);
+const wireVBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,wireVBO); gl.bufferData(gl.ARRAY_BUFFER,wirePos,gl.DYNAMIC_DRAW);
+
+/* static frame: bounding box + axis arrows */
+const frameSegs=[];
+(function(){
+  const hx=SPAN/2, hy=SPAN/2, z0=FLOOR_Z, z1=ZMAX*0.98;
+  const C=[[-hx,-hy,z0],[hx,-hy,z0],[hx,hy,z0],[-hx,hy,z0]];
+  for(let i=0;i<4;i++) frameSegs.push([C[i],C[(i+1)%4],[0.45,0.50,0.62,0.65]]);
+  frameSegs.push([[-hx,-hy,z0],[-hx,-hy,z1],[0.45,0.50,0.62,0.55]]);
+  frameSegs.push([[hx,-hy,z0],[hx,-hy,z1],[0.45,0.50,0.62,0.55]]);
+  frameSegs.push([[hx,hy,z0],[hx,hy,z1],[0.45,0.50,0.62,0.55]]);
+  const L=0.55, o=[-hx,-hy,z0];
+  function boldAxis(a,b){ /* fake thick line: center + 6 parallel offsets */
+    const d=0.013, offs=[[0,0,0],[d,0,0],[-d,0,0],[0,d,0],[0,-d,0],[0,0,d],[0,0,-d]];
+    for(const f of offs)
+      frameSegs.push([[a[0]+f[0],a[1]+f[1],a[2]+f[2]],[b[0]+f[0],b[1]+f[1],b[2]+f[2]],[0,0,0,0.95]]);
+  }
+  boldAxis(o,[o[0]+L,o[1],o[2]]);   /* psi axis */
+  boldAxis(o,[o[0],o[1]+L,o[2]]);   /* n axis  */
+  boldAxis(o,[o[0],o[1],z0+0.8]);   /* F axis  */
+})();
+const framePos=new Float32Array(frameSegs.length*6), frameCol=new Float32Array(frameSegs.length*8);
+frameSegs.forEach((s,i)=>{
+  framePos.set(s[0],i*6); framePos.set(s[1],i*6+3);
+  const c=s[2]; frameCol.set(c,i*8); frameCol.set(c,i*8+4);
+});
+const frameVBO=gl.createBuffer(), frameCBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,frameVBO); gl.bufferData(gl.ARRAY_BUFFER,framePos,gl.STATIC_DRAW);
+gl.bindBuffer(gl.ARRAY_BUFFER,frameCBO); gl.bufferData(gl.ARRAY_BUFFER,frameCol,gl.STATIC_DRAW);
+
+/* trail */
+const TRAIL_MAX=900;
+const trail=[]; /* {x,y,z} in world coords */
+const trailPos=new Float32Array(TRAIL_MAX*3), trailCol=new Float32Array(TRAIL_MAX*4);
+const trailVBO=gl.createBuffer(), trailCBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,trailVBO); gl.bufferData(gl.ARRAY_BUFFER,trailPos,gl.DYNAMIC_DRAW);
+gl.bindBuffer(gl.ARRAY_BUFFER,trailCBO); gl.bufferData(gl.ARRAY_BUFFER,trailCol,gl.DYNAMIC_DRAW);
+
+/* floor quad */
+const floorVBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,floorVBO);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,0, 1,0, 0,1, 1,1]),gl.STATIC_DRAW);
+
+/* points (ball halo, ball, N, barrier, SC) */
+const PTN=5;
+const ptData=new Float32Array(PTN*8);
+const ptVBO=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,ptVBO); gl.bufferData(gl.ARRAY_BUFFER,ptData,gl.DYNAMIC_DRAW);
+
+/* ---- camera / interaction ---- */
+const cam={az:0.98, el:0.52, r:7.2, tgt:[0,0,-0.1]};
+cvs.addEventListener('pointerdown',e=>{cvs.setPointerCapture(e.pointerId); cvs.classList.add('dragging');
+  cvs._px=e.clientX; cvs._py=e.clientY;});
+cvs.addEventListener('pointermove',e=>{
+  if(cvs._px==null) return;
+  const dx=e.clientX-cvs._px, dy=e.clientY-cvs._py; cvs._px=e.clientX; cvs._py=e.clientY;
+  cam.az-=dx*0.006; cam.el=Math.min(1.4,Math.max(0.06,cam.el+dy*0.005));
+});
+cvs.addEventListener('pointerup',e=>{cvs._px=null; cvs.classList.remove('dragging');});
+cvs.addEventListener('wheel',e=>{e.preventDefault(); cam.r=Math.min(13,Math.max(4.2,cam.r*(1+e.deltaY*0.001)));},{passive:false});
+
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  const r=cvs.getBoundingClientRect();
+  W=Math.max(2,Math.round(r.width*DPR)); H=Math.max(2,Math.round(r.height*DPR));
+  cvs.width=W; cvs.height=H; gl.viewport(0,0,W,H);
+}
+window.addEventListener('resize',resize);
+
+/* ---- overlay labels ---- */
+const lb={
+  psi:document.getElementById('lbPsi'), n:document.getElementById('lbN'), f:document.getElementById('lbF'),
+  N:document.getElementById('lbMkN'), SC:document.getElementById('lbMkSC'), Br:document.getElementById('lbMkBr'),
+};
+function placeLabel(el,p,m){
+  if(!p){el.style.display='none';return;}
+  const s=mPt(m,[p[0],p[1],p[2],1]);
+  if(s[3]<0.05){el.style.display='none';return;}
+  const x=(0.5+0.5*s[0]/s[3])*cvs.clientWidth, y=(0.5-0.5*s[1]/s[3])*cvs.clientHeight;
+  el.style.display='block'; el.style.left=x+'px'; el.style.top=y+'px';
+}
+
+/* ============================================================
+   4. Simulation + render loop
+   ============================================================ */
+const trailRecEvery=3;
+let substepCount=0, frameNo=0;
+let insetY={lo:-1,hi:1};
+
+function computeSurface(c){
+  const colTmp=[0,0,0];
+  let v=0;
+  for(let j=0;j<NN;j++){
+    const n=(j/(NN-1))*N_MAX, y=wy(n);
+    for(let i=0;i<NPsi;i++){
+      const psi=(i/(NPsi-1))*PSI_MAX;
+      const f=fEval(psi,n,c);
+      surfPos[v]=wx(psi); surfPos[v+1]=y; surfPos[v+2]=zmap(f);
+      heatRGB((f+2.2)/4.4,colTmp,0);
+      surfCol[v]=colTmp[0]/255; surfCol[v+1]=colTmp[1]/255; surfCol[v+2]=colTmp[2]/255;
+      v+=3;
+    }
+  }
+  for(let q=0;q<wireRefs.length;q++){
+    const r=wireRefs[q];
+    wirePos[q*3]=surfPos[(r[1]*NPsi+r[0])*3]; wirePos[q*3+1]=surfPos[(r[1]*NPsi+r[0])*3+1]; wirePos[q*3+2]=surfPos[(r[1]*NPsi+r[0])*3+2];
+  }
+}
+
+function draw(c,crit){
+  gl.clearColor(1,1,1,1);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const eye=[cam.tgt[0]+cam.r*Math.cos(cam.el)*Math.sin(cam.az),
+             cam.tgt[1]+cam.r*Math.cos(cam.el)*Math.cos(cam.az),
+             cam.tgt[2]+cam.r*Math.sin(cam.el)];
+  const proj=mPersp(0.72,W/H,0.1,100);
+  const view=mLook(eye,cam.tgt,[0,0,1]);
+  const M=mMul(proj,view);
+
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+
+  /* floor */
+  gl.useProgram(floorProg);
+  gl.uniformMatrix4fv(U.floor.mvp,false,M);
+  gl.uniform1f(U.floor.z,FLOOR_Z);
+  gl.uniform1f(U.floor.a,c.a); gl.uniform1f(U.floor.b,MOD.beta); gl.uniform1f(U.floor.l,MOD.lambda);
+  gl.uniform1f(U.floor.g,MOD.g); gl.uniform1f(U.floor.k,MOD.k); gl.uniform1f(U.floor.np,c.np); gl.uniform1f(U.floor.h,c.h);
+  let glow=0, er=0;
+  for(const w of proto.writes) glow=Math.max(glow,envW(w,SIM.t));
+  for(const e of proto.erases) er=Math.max(er,envE(e,SIM.t));
+  gl.uniform1f(U.floor.glow,glow); gl.uniform1f(U.floor.er,er);
+  gl.bindBuffer(gl.ARRAY_BUFFER,floorVBO);
+  const aG=gl.getAttribLocation(floorProg,'aG');
+  gl.enableVertexAttribArray(aG); gl.vertexAttribPointer(aG,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+  /* surface */
+  gl.useProgram(surfProg);
+  gl.uniformMatrix4fv(U.surf.mvp,false,M);
+  const sP=gl.getAttribLocation(surfProg,'aPos'), sC=gl.getAttribLocation(surfProg,'aCol');
+  gl.bindBuffer(gl.ARRAY_BUFFER,surfVBO);
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,surfPos);
+  gl.enableVertexAttribArray(sP); gl.vertexAttribPointer(sP,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,surfCBO);
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,surfCol);
+  gl.enableVertexAttribArray(sC); gl.vertexAttribPointer(sC,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,surfIBO);
+  gl.drawElements(gl.TRIANGLES,surfIdx.length,gl.UNSIGNED_SHORT,0);
+
+  /* transparent passes */
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+  /* frame */
+  gl.useProgram(lineProg);
+  gl.uniformMatrix4fv(U.line.mvp,false,M);
+  gl.bindBuffer(gl.ARRAY_BUFFER,frameVBO);
+  const fP=gl.getAttribLocation(lineProg,'aPos'), fC=gl.getAttribLocation(lineProg,'aCol');
+  gl.enableVertexAttribArray(fP); gl.vertexAttribPointer(fP,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,frameCBO);
+  gl.enableVertexAttribArray(fC); gl.vertexAttribPointer(fC,4,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.LINES,0,framePos.length/3);
+
+  /* wireframe */
+  gl.bindBuffer(gl.ARRAY_BUFFER,wireVBO);
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,wirePos);
+  gl.vertexAttribPointer(fP,3,gl.FLOAT,false,0,0);
+  /* reuse color attrib: constant color via small buffer trick -> use frame color buffer with white-ish? simplest: disable color attrib and set constant */
+  const wireColBuf=new Float32Array([0,0,0,0.14]);
+  gl.disableVertexAttribArray(fC);
+  gl.vertexAttrib4fv(fC,wireColBuf);
+  gl.drawArrays(gl.LINES,0,wirePos.length/3);
+  gl.enableVertexAttribArray(fC);
+
+  /* trail */
+  const m=Math.min(trail.length,TRAIL_MAX);
+  if(m>1){
+    for(let i=0;i<m;i++){
+      const p=trail[trail.length-m+i];
+      trailPos[i*3]=p[0]; trailPos[i*3+1]=p[1]; trailPos[i*3+2]=p[2];
+      const a=0.9*(i/m)*(i/m);
+      trailCol[i*4]=0.45; trailCol[i*4+1]=0.28; trailCol[i*4+2]=0.05; trailCol[i*4+3]=a;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER,trailVBO);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,trailPos.subarray(0,m*3));
+    gl.vertexAttribPointer(fP,3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,trailCBO);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,trailCol.subarray(0,m*4));
+    gl.enableVertexAttribArray(fC); gl.vertexAttribPointer(fC,4,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.LINE_STRIP,0,m);
+  }
+
+  /* points: [halo, ball, N, barrier, SC] */
+  const fz=zmap(fEval(Math.max(0,SIM.psi),SIM.n,c))+0.02;
+  const pts=[
+    {p:[wx(Math.max(0,SIM.psi)),wy(SIM.n),fz], col:[0.95,0.65,0.25,0.30], s:30},
+    {p:[wx(Math.max(0,SIM.psi)),wy(SIM.n),fz], col:[0.93,0.52,0.05,1.0],  s:12},
+    {p:[wx(0),wy(crit.N.n),zmap(crit.N.f)+0.02], col:[0,0.45,0.72,0.95], s:8},
+    {p:crit.barrier?[wx(crit.barrier.psi),wy(crit.barrier.n),zmap(crit.barrier.f)+0.02]:null, col:[0.75,0.40,0.05,0.95], s:8},
+    {p:crit.SC?[wx(crit.SC.psi),wy(crit.SC.n),zmap(crit.SC.f)+0.02]:null, col:[0.72,0.06,0.50,0.95], s:8},
+  ];
+  pts.forEach((pt,i)=>{
+    const o=i*8;
+    if(pt.p){ ptData[o]=pt.p[0]; ptData[o+1]=pt.p[1]; ptData[o+2]=pt.p[2];
+      ptData[o+3]=pt.col[0]; ptData[o+4]=pt.col[1]; ptData[o+5]=pt.col[2]; ptData[o+6]=pt.col[3];
+      ptData[o+7]=pt.s*DPR; }
+    else ptData[o+7]=0;
+  });
+  gl.useProgram(ptProg);
+  gl.uniformMatrix4fv(U.pt.mvp,false,M);
+  gl.bindBuffer(gl.ARRAY_BUFFER,ptVBO);
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,ptData);
+  const pP=gl.getAttribLocation(ptProg,'aPos'), pC=gl.getAttribLocation(ptProg,'aCol'), pS=gl.getAttribLocation(ptProg,'aSize');
+  gl.enableVertexAttribArray(pP); gl.vertexAttribPointer(pP,3,gl.FLOAT,false,32,0);
+  gl.enableVertexAttribArray(pC); gl.vertexAttribPointer(pC,4,gl.FLOAT,false,32,12);
+  gl.enableVertexAttribArray(pS); gl.vertexAttribPointer(pS,1,gl.FLOAT,false,32,28);
+  gl.drawArrays(gl.POINTS,0,PTN);
+
+  /* labels */
+  placeLabel(lb.psi,[SPAN/2+0.75,-SPAN/2,FLOOR_Z],M);
+  placeLabel(lb.n,[-SPAN/2,SPAN/2+0.75,FLOOR_Z],M);
+  placeLabel(lb.f,[-SPAN/2,-SPAN/2,FLOOR_Z+1.7],M);
+  placeLabel(lb.N,[wx(0),wy(crit.N.n),zmap(crit.N.f)+0.1],M);
+  if(crit.barrier) placeLabel(lb.Br,[wx(crit.barrier.psi),wy(crit.barrier.n),zmap(crit.barrier.f)+0.1],M);
+  else lb.Br.style.display='none';
+  if(crit.SC) placeLabel(lb.SC,[wx(crit.SC.psi),wy(crit.SC.n),zmap(crit.SC.f)+0.1],M);
+  else lb.SC.style.display='none';
+}
+
+/* ============================================================
+   5. Insets: effective potential + timeline (2D canvases)
+   ============================================================ */
+const inset=document.getElementById('inset'), tlc=document.getElementById('timeline');
+function drawInset(c,crit){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=inset.clientWidth*dpr, h=190*dpr;
+  if(inset.width!==w){inset.width=w; inset.height=h;}
+  const g=inset.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,w,h);
+  const NP=140, fs=[];
+  let fmin=1e9,fmax=-1e9;
+  for(let i=0;i<=NP;i++){ const psi=i/NP*PSI_MAX; const f=feffOf(psi,c); fs.push(f);
+    if(f<fmin)fmin=f; if(f>fmax)fmax=f; }
+  let lo=fmin-0.08*(fmax-fmin+0.2)-0.02, hi=fmax+0.12*(fmax-fmin+0.2)+0.02;
+  insetY.lo+= (lo-insetY.lo)*0.25; insetY.hi+=(hi-insetY.hi)*0.25;
+  const X=psi=>psi/PSI_MAX*w, Y=f=>h-( (f-insetY.lo)/(insetY.hi-insetY.lo) )*h;
+  /* zero line */
+  g.strokeStyle='rgba(0,0,0,0.35)'; g.lineWidth=1.4*dpr;
+  if(0>insetY.lo&&0<insetY.hi){ g.beginPath(); g.moveTo(0,Y(0)); g.lineTo(w,Y(0)); g.stroke(); }
+  /* barrier band */
+  if(crit.barrier){
+    g.fillStyle='rgba(192,95,16,0.12)';
+    g.fillRect(X(crit.barrier.psi)-4*dpr,0,8*dpr,h);
+  }
+  /* topological sector stack: F_eff in adjacent kink sectors (gray) */
+  if(MOD.topoOn){
+    const Qc=Math.round(SIM.q);
+    for(let S=Math.max(0,Qc-1); S<=Qc+1; S++){
+      if(S===Qc) continue;
+      const cS={a:c.a-MOD.gk*(S-c.q), np:c.np, h:c.h, q:S};
+      g.strokeStyle='rgba(112,58,160,0.35)'; g.lineWidth=1.5*dpr; g.beginPath();
+      for(let i=0;i<=NP;i++){ const psi=i/NP*PSI_MAX; const f=feffOf(psi,cS);
+        const y=Math.min(h-2*dpr,Math.max(2*dpr,Y(f))); const x=X(psi);
+        i?g.lineTo(x,y):g.moveTo(x,y); }
+      g.stroke();
+    }
+  }
+  /* curve */
+  g.strokeStyle='#1b2536'; g.lineWidth=2.6*dpr; g.beginPath();
+  for(let i=0;i<=NP;i++){ const x=X(i/NP*PSI_MAX), y=Y(fs[i]); i?g.lineTo(x,y):g.moveTo(x,y); }
+  g.stroke();
+  /* points */
+  function dot(p,f,col){ if(f==null||!isFinite(f))return;
+    g.fillStyle=col; g.beginPath(); g.arc(X(p),Y(f),4.3*dpr,0,7); g.fill();
+    g.strokeStyle='rgba(0,0,0,0.7)'; g.lineWidth=1.5*dpr; g.stroke(); }
+  dot(0,crit.N.f,'#0077a8');
+  if(crit.barrier) dot(crit.barrier.psi,crit.barrier.f,'#c05f10');
+  if(crit.SC) dot(crit.SC.psi,crit.SC.f,'#b81d86');
+  const fb=feffOf(Math.max(0,SIM.psi),c);
+  dot(Math.max(0,SIM.psi),fb,'#9a5a00');
+  g.fillStyle='#42536e'; g.font=`700 ${12.5*dpr}px system-ui`;
+  g.fillText('F_eff(ψ) along minimal path n(ψ)'+(MOD.topoOn?'   — gray: adjacent kink sectors Q±1':''),8*dpr,12*dpr);
+  g.fillText('ψ',w-12*dpr,h-6*dpr);
+}
+const fkc=document.getElementById('fkchain');
+function drawFK(){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=fkc.clientWidth*dpr, h=84*dpr;
+  if(fkc.width!==w){fkc.width=w; fkc.height=h;}
+  const g=fkc.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,w,h);
+  g.fillStyle='#5c6b84'; g.font=`700 ${11.5*dpr}px system-ui`;
+  g.fillText('Frenkel–Kontorova chain: MD-line phase θ(x) on the Si substrate potential — each step is a kink (winding +1)',8*dpr,12*dpr);
+  g.font=`600 ${10.5*dpr}px system-ui`;
+  g.fillText('dashed red: grain-boundary / dislocation-crossing junctions — pinning sites for kink glide',8*dpr,24*dpr);
+  /* GB / crossing junctions */
+  if(MOD.pinOn){
+    g.strokeStyle='rgba(179,34,34,0.55)'; g.lineWidth=2*dpr; g.setLineDash([5*dpr,4*dpr]);
+    for(const gx of GBX){ g.beginPath(); g.moveTo(gx*w,17*dpr); g.lineTo(gx*w,h-4*dpr); g.stroke(); }
+    g.setLineDash([]);
+  }
+  /* substrate potential: periodic sine */
+  g.strokeStyle='rgba(90,105,135,0.40)'; g.lineWidth=3.2*dpr; g.beginPath();
+  const sineY=36*dpr;
+  for(let i=0;i<=220;i++){ const x=i/220*w; const y=sineY+6.5*dpr*Math.sin(x/w*Math.PI*2*5-Math.PI/2);
+    i?g.lineTo(x,y):g.moveTo(x,y); }
+  g.stroke();
+  /* phase line with kinks at KINKS positions */
+  const ks=[...KINKS].sort((a,b)=>a-b);
+  const yOf=lvl=>Math.max(30*dpr,(h-10*dpr)-lvl*11.5*dpr);
+  const wdt=0.030;
+  g.strokeStyle='#1b2536'; g.lineWidth=3.4*dpr; g.beginPath();
+  for(let i=0;i<=320;i++){ const u=i/320; let lvl=0;
+    for(const kp of ks) lvl+=1/(1+Math.exp(-(u-kp)/wdt));
+    const x=u*w, y=yOf(lvl); i?g.lineTo(x,y):g.moveTo(x,y); }
+  g.stroke();
+  /* kink markers */
+  g.fillStyle='#b81d86';
+  for(const kp of ks){ let below=0; for(const kp2 of ks) if(kp2<kp-1e-9) below++;
+    g.beginPath(); g.arc(kp*w, yOf(below+0.5), 4.6*dpr, 0, 7); g.fill(); }
+}
+function drawTimeline(){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=tlc.clientWidth*dpr, h=76*dpr;
+  if(tlc.width!==w){tlc.width=w; tlc.height=h;}
+  const g=tlc.getContext('2d'); g.clearRect(0,0,w,h);
+  const T0=0,T1=45, X=t=>(t-T0)/(T1-T0)*w;
+  /* pulse bands */
+  for(const pw of proto.writes){ g.fillStyle='rgba(178,94,0,0.10)'; g.fillRect(X(pw.t0),0,X(pw.t0+MOD.wDur)-X(pw.t0),h); }
+  for(const pe of proto.erases){ g.fillStyle='rgba(179,34,34,0.12)'; g.fillRect(X(pe.t0),0,X(pe.t0+MOD.eDur)-X(pe.t0),h); }
+  /* h(t), np(t) curves */
+  function curve(fn,col,scale){
+    g.strokeStyle=col; g.lineWidth=2.4*dpr; g.beginPath();
+    for(let i=0;i<=160;i++){ const t=T0+i/160*(T1-T0);
+      const v=fn(t)*scale; const y=Math.min(h-3*dpr,Math.max(3*dpr,h-6*dpr-v*(h-16*dpr)));
+      i?g.lineTo(X(t),y):g.moveTo(X(t),y); }
+    g.stroke();
+  }
+  curve(t=>driveOf(t)/1.1,'#b25e00',1);
+  curve(t=>npOf(t)/1.2,'#1f6fc0',1);
+  /* scheduled kink sector Q(t): stepped integer winding */
+  function qSched(t){ let q=0; for(const w of proto.writes){ if(t>w.t0) q++; } for(const e of proto.erases){ if(t>e.t0) q=0; } return Math.min(q,4); }
+  g.strokeStyle='#703aa0'; g.lineWidth=2.6*dpr; g.beginPath();
+  for(let i=0;i<=320;i++){ const t=T0+i/320*(T1-T0); const v=qSched(t)/2.6;
+    const y=Math.min(h-3*dpr,Math.max(3*dpr,h-6*dpr-v*(h-16*dpr)));
+    const x=X(t); i?g.lineTo(x,y):g.moveTo(x,y); }
+  g.stroke();
+  /* cursor */
+  const cx=X(Math.min(SIM.t,T1));
+  g.strokeStyle='rgba(0,0,0,0.65)'; g.lineWidth=1.6*dpr;
+  g.beginPath(); g.moveTo(cx,0); g.lineTo(cx,h); g.stroke();
+  g.fillStyle='#42536e'; g.font=`700 ${12*dpr}px system-ui`;
+  g.fillText('h(t) drive',8*dpr,14*dpr);
+  g.fillStyle='#1f6fc0'; g.fillText('n_p(t) trapped charge',76*dpr,14*dpr);
+  g.fillStyle='#703aa0'; g.fillText('Q(t) kink sector',206*dpr,14*dpr);
+}
+ 
+/* ============================================================
+   6. UI wiring
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const badge=$('stateBadge'), stateText=$('stateText'), timeRow=$('timeRow');
+const SPD=[0.5,1,2,4]; let spdIdx=1;
+$('btnPlay').onclick=()=>{
+  if(SIM.running){SIM.running=false;}
+  else{spdIdx=(spdIdx+1)%SPD.length; SIM.speed=SPD[spdIdx]; SIM.running=true;}
+  $('spdLbl').textContent=(SIM.running?SIM.speed:0)+'\u00d7';
+  $('btnPlay').innerHTML=(SIM.running?'&#9208; Pause':'&#9654; Play')+' / speed: <span id="spdLbl">'+(SIM.running?SIM.speed+'\u00d7':'off')+'</span>';
+};
+function scheduleWrite(t0){
+  proto.writes.push({t0});
+  if(MOD.pinOn){ const j=GBX[Math.floor(Math.random()*GBX.length)];
+    KINKS.push(Math.max(0.05,Math.min(0.95,j+(Math.random()-0.5)*0.07))); }
+  else KINKS.push(0.12+Math.random()*0.76);
+}
+function scheduleErase(t0){ proto.erases.push({t0}); KINKS.length=0; }
+$('btnWrite').onclick=()=>scheduleWrite(SIM.t+0.4);
+$('btnErase').onclick=()=>scheduleErase(SIM.t+0.4);
+$('btnKick').onclick=()=>{
+  SIM.psi+= (Math.random()-0.5)*1.3; SIM.n+=(Math.random()-0.5)*0.6;
+  if(SIM.psi<0) SIM.psi=0.001;
+};
+$('btnReset').onclick=()=>{ resetSim(true); };
+const DEF={...MOD};
+function syncSliders(){
+  const rows=[['sT','oT','T',2],['sF','oF','F',2],['sG','oG','g',2],['sK','oK','k',2],['sP','oP','p',2],['sGk','oGk','gk',2],['sEtop','oEtop','Etop',2],['sPin','oPin','Ppin',2]];
+  for(const [sid,oid,key,dec] of rows){ $(sid).value=MOD[key]; $(oid).textContent=(+MOD[key]).toFixed(dec); }
+  const ct=$('chipTopo');
+  ct.classList.toggle('on', MOD.topoOn);
+  ct.textContent='kink dynamics: '+(MOD.topoOn?'ON':'OFF');
+  const cpn=$('chipPin');
+  cpn.classList.toggle('on', MOD.pinOn);
+  cpn.textContent='GB pinning: '+(MOD.pinOn?'ON':'OFF');
+}
+$('chipTopo').onclick=()=>{ MOD.topoOn=!MOD.topoOn; if(!MOD.topoOn) KINKS.length=0; syncSliders(); };
+$('chipPin').onclick=()=>{ MOD.pinOn=!MOD.pinOn; syncSliders(); };
+function applyPreset(ov){ Object.assign(MOD,DEF,ov); resetSim(true); syncSliders(); }
+document.querySelectorAll('.chip[data-preset]').forEach(ch=>{
+  ch.onclick=()=>{
+    const p=ch.dataset.preset;
+    if(p==='metastable'){ applyPreset({}); scheduleWrite(1.5); }
+    else if(p==='notrap'){ applyPreset({p:0.05, topoOn:false}); scheduleWrite(1.5); }
+    else if(p==='topo'){ applyPreset({p:0.05}); scheduleWrite(1.5); }
+    else if(p==='weakg'){ applyPreset({g:1.5}); scheduleWrite(1.5); }
+    else if(p==='strong'){ applyPreset({}); scheduleWrite(0.8); scheduleWrite(8.5); }
+    else if(p==='gpin'){ applyPreset({Ppin:5}); scheduleWrite(1.5); }
+    SIM.running=true;
+  };
+});
+[['sT','oT','T',2],['sF','oF','F',2],['sG','oG','g',2],['sK','oK','k',2],['sP','oP','p',2],['sGk','oGk','gk',2],['sEtop','oEtop','Etop',2],['sPin','oPin','Ppin',2]].forEach(([sid,oid,key,dec])=>{
+  $(sid).addEventListener('input',e=>{ MOD[key]=parseFloat(e.target.value); $(oid).textContent=MOD[key].toFixed(dec); });
+});
+
+function metastableWindow(){
+  /* window in T given current g,k,p,F and accumulated writes */
+  const npInf=npOf(5000);
+  const c4=0.5*(MOD.beta-MOD.g*MOD.g/MOD.k), c6=MOD.lambda/6;
+  if(c4>=0) return null;
+  const c2max=c4*c4/(3*c6);
+  /* find c2 where f(SC*) = f(N): scan */
+  let lo=null;
+  const N=60;
+  for(let i=0;i<=N;i++){
+    const c2=(i/N)*c2max;
+    const disc=4*c4*c4-12*c6*c2; if(disc<=0) continue;
+    const x2=(-2*c4+Math.sqrt(disc))/(6*c6);
+    const f=c2*x2+c4*x2*x2+c6*x2*x2*x2;
+    if(f>0){ lo=c2*(i>0?1:1); break; }
+  }
+  if(lo==null) return {lo:null, hi:c2max, npInf};
+  return {lo, hi:c2max, npInf};
+}
+function fmt2(x){return x.toFixed(2);}
+function updateReadouts(c,crit){
+  $('rC2').textContent=crit.c2.toFixed(3);
+  const be=MOD.beta-MOD.g*MOD.g/MOD.k;
+  $('rC4').innerHTML=(be>=0?'':'<span style="color:var(--mag)">&lt; 0</span>')+' '+be.toFixed(2)+(be>=0?' (no bistability)':' (bistable)');
+  $('rBar').textContent=crit.barrier?(crit.barrier.f-crit.N.f).toFixed(3):'none';
+  $('rMarg').textContent=crit.SC?(crit.SC.f-crit.N.f).toFixed(3):'-';
+  $('rPsi').textContent=crit.SC?crit.SC.psi.toFixed(2)+' , '+crit.SC.n.toFixed(2):'-';
+  $('rDepth').textContent=(crit.SC&&crit.barrier)?(crit.barrier.f-crit.SC.f).toFixed(3):'-';
+  const Q=MOD.topoOn?Math.round(SIM.q):0;
+  $('rQ').textContent=Q+(MOD.topoOn?'':' (off)');
+  $('rEk').textContent=(MOD.Ek*Q).toFixed(2);
+  const Pp=(MOD.topoOn && MOD.pinOn)?MOD.Ppin:0;
+  const Eesc=MOD.Etop+Pp;
+  $('rEsc').textContent=Eesc.toFixed(2)+(MOD.pinOn?'':' (no GB)');
+  $('rTau').textContent=(Math.exp(Eesc)/MOD.gamma0).toFixed(0);
+  const win=metastableWindow();
+  if(!win||win.lo==null){ $('rWin').textContent='none at current parameters'; }
+  else{
+    const Kk=MOD.gk*Q;
+    const Tlo=1+(win.lo+MOD.g*win.npInf+Kk)/MOD.alpha0, Thi=1+(win.hi+MOD.g*win.npInf+Kk)/MOD.alpha0;
+    $('rWin').textContent=`${fmt2(Tlo)} – ${fmt2(Thi)} Tc   (now: ${fmt2(MOD.T)} Tc ≈ ${(MOD.T*1.2).toFixed(1)} K)`;
+  }
+}
+function updateStatus(c,crit){
+  let glow=0, er=0;
+  for(const w of proto.writes) glow=Math.max(glow,envW(w,SIM.t));
+  for(const e of proto.erases) er=Math.max(er,envE(e,SIM.t));
+  let cls='b-normal', txt='Normal state (ψ = 0)', short='NORMAL';
+  if(er>0.03){ cls='b-erase'; short='ERASING'; txt='Erase pulse: pair-breaking + de-trapping — the state is being reset.'; }
+  else if(glow>0.03){ cls='b-light'; short='LIGHT ON'; txt='Femtosecond pulse: quasiparticle injection and charge trapping at the Al-Si interface.'; }
+  else if(crit.SC && crit.barrier && SIM.psi>(crit.barrier.psi+crit.SC.psi)/2){
+    if(crit.SC.f-crit.N.f>0.002){ cls='b-meta'; short='METASTABLE SC';
+      txt='Metastable superconducting state: trapped charge and condensate feedback hold ψ* ≠ 0 behind a barrier ΔF.'; }
+    else{ cls='b-sc'; short='SC STABLE'; txt='Superconducting state is now the global minimum (pulse over-stabilized).'; }
+  }
+  else if(crit.SC && crit.barrier){ txt='Normal state — bistable landscape: the SC basin exists but is not occupied.'; }
+  const Pp=(MOD.topoOn && MOD.pinOn)?MOD.Ppin:0;
+  if(MOD.topoOn && SIM.q>=0.5){
+    txt+=` Kink sector Q=${Math.round(SIM.q)}: topologically protected — escape requires kink-pair annihilation past GB/crossing junctions, E_esc = ${(MOD.Etop+Pp).toFixed(2)}, τ ≈ e^E_esc/γ₀ = ${(Math.exp(MOD.Etop+Pp)/MOD.gamma0).toFixed(0)}.`;
+  } else if(MOD.topoOn && SIM.q>0.15 && SIM.q<0.5){
+    txt+=' Incomplete kink winding: GB pinning prevented kink-pair separation within the pulse — write fidelity degraded (reduce n_x·E_pin).';
+  } else if(!MOD.topoOn && proto.writes.length>0){
+    txt+=' Kink dynamics OFF: no topological protection.';
+  }
+  badge.className=cls; badge.textContent=short; stateText.textContent=txt;
+  timeRow.innerHTML=`t = ${SIM.t.toFixed(1)} &nbsp;|&nbsp; T = ${MOD.T.toFixed(2)} T<sub>c</sub> &asymp; ${(MOD.T*1.2).toFixed(1)} K &nbsp;|&nbsp; n<sub>p</sub> = ${c.np.toFixed(2)}, h = ${c.h.toFixed(2)} &nbsp;|&nbsp; Q = ${Math.round(SIM.q)}`;
+}
+
+/* ---- main loop ---- */
+let last=null;
+function tick(ts){
+  if(last==null) last=ts;
+  let dtms=Math.min(60,ts-last); last=ts;
+  if(SIM.running){
+    let dtSim=(dtms/1000)*6*SIM.speed;
+    const nsub=Math.max(1,Math.min(240,Math.round(dtSim/SIM.dt)));
+    const sub=dtSim/nsub;
+    for(let i=0;i<nsub;i++){
+      SIM.t+=sub;
+      stepSim(sub,SIM.t);
+      if(!isFinite(SIM.psi)||!isFinite(SIM.n)){ SIM.psi=0.001; SIM.n=0; }
+      substepCount++;
+      if(substepCount%trailRecEvery===0){
+        const c=ctxOf(SIM.t);
+        trail.push([wx(Math.max(0,SIM.psi)),wy(SIM.n),zmap(fEval(Math.max(0,SIM.psi),SIM.n,c))+0.015]);
+        if(trail.length>4000) trail.splice(0,trail.length-4000);
+      }
+    }
+  }
+  const c=ctxOf(SIM.t);
+  const crit=critPts(c);
+  computeSurface(c);
+  draw(c,crit);
+  frameNo++;
+  if(frameNo%2===0){ drawInset(c,crit); drawTimeline(); drawFK(); }
+  if(frameNo%6===0){ updateReadouts(c,crit); }
+  updateStatus(c,crit);
+  requestAnimationFrame(tick);
+}
+
+/* ---- boot ---- */
+resize();
+scheduleWrite(1.5);   /* auto-demo: one write pulse */
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
